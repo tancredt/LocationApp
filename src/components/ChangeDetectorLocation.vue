@@ -254,7 +254,7 @@ h1 {
 
 .form-row {
   display: flex;
-  gap: 1.5rem;
+  gap: 3rem; /* Increased gap between inputs */
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }

@@ -7,40 +7,32 @@
         <form @submit.prevent="changeDetectorLocation" class="change-location-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="outgoing-detector">Outgoing Detector *</label>
-              <select id="outgoing-detector" v-model="formData.outgoing_detector_id" required class="form-control" @change="updateOutgoingLocation">
-                <option value="">Select Outgoing Detector</option>
-                <option v-for="detector in detectors" :key="detector.id" :value="detector.id">
+              <label for="detector-input">Detector *</label>
+              <input 
+                id="detector-input" 
+                v-model="detectorInput" 
+                type="text" 
+                placeholder="Enter detector (start typing to search)" 
+                class="form-control"
+                @focus="showDetectorDropdown = true"
+                @blur="hideDetectorDropdown"
+                required
+              />
+              <div v-if="showDetectorDropdown && filteredDetectors.length > 0" class="dropdown-menu">
+                <div 
+                  v-for="detector in filteredDetectors" 
+                  :key="detector.id" 
+                  class="dropdown-item"
+                  @click="selectDetector(detector)"
+                >
                   {{ detector.label }} ({{ detector.serial }})
-                </option>
-              </select>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="outgoing-location">Outgoing Location *</label>
-              <select id="outgoing-location" v-model="formData.outgoing_location_id" required class="form-control">
-                <option value="">Select Location</option>
-                <option v-for="location in locations" :key="location.id" :value="location.id">
-                  {{ location.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="returning-detector">Returning Detector *</label>
-              <select id="returning-detector" v-model="formData.returning_detector_id" required class="form-control" @change="updateReturningLocation">
-                <option value="">Select Returning Detector</option>
-                <option v-for="detector in detectors" :key="detector.id" :value="detector.id">
-                  {{ detector.label }} ({{ detector.serial }})
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="returning-location">Returning Location *</label>
-              <select id="returning-location" v-model="formData.returning_location_id" required class="form-control">
+              <label for="location">New Location *</label>
+              <select id="location" v-model="formData.location_id" required class="form-control">
                 <option value="">Select Location</option>
                 <option v-for="location in locations" :key="location.id" :value="location.id">
                   {{ location.label }}
@@ -86,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { post, get } from '@/utils/api.js';
 
@@ -94,11 +86,14 @@ const router = useRouter();
 
 // State for form data
 const formData = ref({
-  outgoing_detector_id: '',
-  outgoing_location_id: '',
-  returning_detector_id: '',
-  returning_location_id: ''
+  detector_id: '',
+  location_id: ''
 });
+
+// State for detector autocomplete
+const detectorInput = ref('');
+const showDetectorDropdown = ref(false);
+const filteredDetectors = ref([]);
 
 // State for related data
 const detectors = ref([]);
@@ -114,6 +109,20 @@ const successMessage = ref('');
 // State for error dialog
 const showErrorDialog = ref(false);
 const errorMessages = ref([]);
+
+// Watch for changes in detector input to filter detectors
+watch(detectorInput, () => {
+  if (detectorInput.value.trim()) {
+    filteredDetectors.value = detectors.value.filter(detector =>
+      detector.label.toLowerCase().includes(detectorInput.value.toLowerCase()) ||
+      detector.serial.toLowerCase().includes(detectorInput.value.toLowerCase())
+    ).slice(0, 10); // Limit to 10 results
+    showDetectorDropdown.value = true;
+  } else {
+    filteredDetectors.value = [];
+    showDetectorDropdown.value = false;
+  }
+});
 
 // Fetch detectors and locations
 const fetchData = async () => {
@@ -134,27 +143,18 @@ const fetchData = async () => {
   }
 };
 
-// Update location when detector is selected
-const updateOutgoingLocation = async () => {
-  if (formData.value.outgoing_detector_id) {
-    const detector = detectors.value.find(d => d.id == formData.value.outgoing_detector_id);
-    if (detector && detector.location) {
-      // If location is an object, get its ID; otherwise, use it directly
-      const locationId = typeof detector.location === 'object' ? detector.location.id : detector.location;
-      formData.value.outgoing_location_id = locationId;
-    }
-  }
+// Select a detector from the dropdown
+const selectDetector = (detector) => {
+  formData.value.detector_id = detector.id;
+  detectorInput.value = `${detector.label} (${detector.serial})`;
+  showDetectorDropdown.value = false;
 };
 
-const updateReturningLocation = async () => {
-  if (formData.value.returning_detector_id) {
-    const detector = detectors.value.find(d => d.id == formData.value.returning_detector_id);
-    if (detector && detector.location) {
-      // If location is an object, get its ID; otherwise, use it directly
-      const locationId = typeof detector.location === 'object' ? detector.location.id : detector.location;
-      formData.value.returning_location_id = locationId;
-    }
-  }
+// Hide detector dropdown with a delay to allow click event
+const hideDetectorDropdown = () => {
+  setTimeout(() => {
+    showDetectorDropdown.value = false;
+  }, 200);
 };
 
 // Change detector location function
@@ -162,12 +162,10 @@ const changeDetectorLocation = async () => {
   isSubmitting.value = true;
 
   try {
-    // Call the API to change detector locations
+    // Call the API to change detector location
     const result = await post('/api/inventory/change-detector-location/', {
-      outgoing_detector_id: parseInt(formData.value.outgoing_detector_id),
-      outgoing_location_id: parseInt(formData.value.outgoing_location_id),
-      returning_detector_id: parseInt(formData.value.returning_detector_id),
-      returning_location_id: parseInt(formData.value.returning_location_id)
+      detector_id: parseInt(formData.value.detector_id),
+      location_id: parseInt(formData.value.location_id)
     });
 
     if (!result.ok) {
@@ -265,6 +263,7 @@ h1 {
   flex: 1;
   min-width: 200px;
   flex-basis: calc(50% - 0.75rem); /* Two columns by default */
+  position: relative;
 }
 
 /* On smaller screens, make form groups full width */
@@ -293,6 +292,31 @@ h1 {
   outline: none;
   border-color: #42b883;
   box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
 }
 
 .form-actions {

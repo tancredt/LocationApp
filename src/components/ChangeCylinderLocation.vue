@@ -7,40 +7,32 @@
         <form @submit.prevent="changeCylinderLocation" class="change-location-form">
           <div class="form-row">
             <div class="form-group">
-              <label for="outgoing-cylinder">Outgoing Cylinder *</label>
-              <select id="outgoing-cylinder" v-model="formData.outgoing_cylinder_id" required class="form-control" @change="updateOutgoingLocation">
-                <option value="">Select Outgoing Cylinder</option>
-                <option v-for="cylinder in cylinders" :key="cylinder.id" :value="cylinder.id">
+              <label for="cylinder-input">Cylinder *</label>
+              <input 
+                id="cylinder-input" 
+                v-model="cylinderInput" 
+                type="text" 
+                placeholder="Enter cylinder (start typing to search)" 
+                class="form-control"
+                @focus="showCylinderDropdown = true"
+                @blur="hideCylinderDropdown"
+                required
+              />
+              <div v-if="showCylinderDropdown && filteredCylinders.length > 0" class="dropdown-menu">
+                <div 
+                  v-for="cylinder in filteredCylinders" 
+                  :key="cylinder.id" 
+                  class="dropdown-item"
+                  @click="selectCylinder(cylinder)"
+                >
                   CYL{{ cylinder.cylinder_number.toString().padStart(5, '0') }} ({{ cylinder.serial }})
-                </option>
-              </select>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="outgoing-location">Outgoing Location *</label>
-              <select id="outgoing-location" v-model="formData.outgoing_location_id" required class="form-control">
-                <option value="">Select Location</option>
-                <option v-for="location in locations" :key="location.id" :value="location.id">
-                  {{ location.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="returning-cylinder">Returning Cylinder *</label>
-              <select id="returning-cylinder" v-model="formData.returning_cylinder_id" required class="form-control" @change="updateReturningLocation">
-                <option value="">Select Returning Cylinder</option>
-                <option v-for="cylinder in cylinders" :key="cylinder.id" :value="cylinder.id">
-                  CYL{{ cylinder.cylinder_number.toString().padStart(5, '0') }} ({{ cylinder.serial }})
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="returning-location">Returning Location *</label>
-              <select id="returning-location" v-model="formData.returning_location_id" required class="form-control">
+              <label for="location">New Location *</label>
+              <select id="location" v-model="formData.location_id" required class="form-control">
                 <option value="">Select Location</option>
                 <option v-for="location in locations" :key="location.id" :value="location.id">
                   {{ location.label }}
@@ -86,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { post, get } from '@/utils/api.js';
 
@@ -94,11 +86,14 @@ const router = useRouter();
 
 // State for form data
 const formData = ref({
-  outgoing_cylinder_id: '',
-  outgoing_location_id: '',
-  returning_cylinder_id: '',
-  returning_location_id: ''
+  cylinder_id: '',
+  location_id: ''
 });
+
+// State for cylinder autocomplete
+const cylinderInput = ref('');
+const showCylinderDropdown = ref(false);
+const filteredCylinders = ref([]);
 
 // State for related data
 const cylinders = ref([]);
@@ -114,6 +109,20 @@ const successMessage = ref('');
 // State for error dialog
 const showErrorDialog = ref(false);
 const errorMessages = ref([]);
+
+// Watch for changes in cylinder input to filter cylinders
+watch(cylinderInput, () => {
+  if (cylinderInput.value.trim()) {
+    filteredCylinders.value = cylinders.value.filter(cylinder =>
+      cylinder.cylinder_number.toString().toLowerCase().includes(cylinderInput.value.toLowerCase()) ||
+      cylinder.serial.toLowerCase().includes(cylinderInput.value.toLowerCase())
+    ).slice(0, 10); // Limit to 10 results
+    showCylinderDropdown.value = true;
+  } else {
+    filteredCylinders.value = [];
+    showCylinderDropdown.value = false;
+  }
+});
 
 // Fetch cylinders and locations
 const fetchData = async () => {
@@ -134,27 +143,18 @@ const fetchData = async () => {
   }
 };
 
-// Update location when cylinder is selected
-const updateOutgoingLocation = async () => {
-  if (formData.value.outgoing_cylinder_id) {
-    const cylinder = cylinders.value.find(c => c.id == formData.value.outgoing_cylinder_id);
-    if (cylinder && cylinder.location) {
-      // If location is an object, get its ID; otherwise, use it directly
-      const locationId = typeof cylinder.location === 'object' ? cylinder.location.id : cylinder.location;
-      formData.value.outgoing_location_id = locationId;
-    }
-  }
+// Select a cylinder from the dropdown
+const selectCylinder = (cylinder) => {
+  formData.value.cylinder_id = cylinder.id;
+  cylinderInput.value = `CYL${cylinder.cylinder_number.toString().padStart(5, '0')} (${cylinder.serial})`;
+  showCylinderDropdown.value = false;
 };
 
-const updateReturningLocation = async () => {
-  if (formData.value.returning_cylinder_id) {
-    const cylinder = cylinders.value.find(c => c.id == formData.value.returning_cylinder_id);
-    if (cylinder && cylinder.location) {
-      // If location is an object, get its ID; otherwise, use it directly
-      const locationId = typeof cylinder.location === 'object' ? cylinder.location.id : cylinder.location;
-      formData.value.returning_location_id = locationId;
-    }
-  }
+// Hide cylinder dropdown with a delay to allow click event
+const hideCylinderDropdown = () => {
+  setTimeout(() => {
+    showCylinderDropdown.value = false;
+  }, 200);
 };
 
 // Change cylinder location function
@@ -162,12 +162,10 @@ const changeCylinderLocation = async () => {
   isSubmitting.value = true;
 
   try {
-    // Call the API to change cylinder locations
+    // Call the API to change cylinder location
     const result = await post('/api/inventory/change-cylinder-location/', {
-      outgoing_cylinder_id: parseInt(formData.value.outgoing_cylinder_id),
-      outgoing_location_id: parseInt(formData.value.outgoing_location_id),
-      returning_cylinder_id: parseInt(formData.value.returning_cylinder_id),
-      returning_location_id: parseInt(formData.value.returning_location_id)
+      cylinder_id: parseInt(formData.value.cylinder_id),
+      location_id: parseInt(formData.value.location_id)
     });
 
     if (!result.ok) {
@@ -265,6 +263,7 @@ h1 {
   flex: 1;
   min-width: 200px;
   flex-basis: calc(50% - 0.75rem); /* Two columns by default */
+  position: relative;
 }
 
 /* On smaller screens, make form groups full width */
@@ -293,6 +292,31 @@ h1 {
   outline: none;
   border-color: #42b883;
   box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
 }
 
 .form-actions {

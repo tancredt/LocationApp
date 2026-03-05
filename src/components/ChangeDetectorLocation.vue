@@ -1,7 +1,7 @@
 <template>
   <div class="change-location-form-page">
     <div class="page-container">
-      <h1>Change Detector Location</h1>
+      <h1>Detector Swap</h1>
 
       <div class="form-container">
         <form @submit.prevent="changeDetectorLocation" class="change-location-form">
@@ -27,20 +27,20 @@
               </select>
             </div>
 
-            <!-- Original Location (Priority 3 only) -->
+            <!-- Origin (Priority 2 and 3 only) -->
             <div class="form-group">
-              <label for="original-location">Original Location *</label>
-              <select 
-                id="original-location" 
-                v-model="formData.original_location_id" 
-                required 
+              <label for="original-location">Origin *</label>
+              <select
+                id="original-location"
+                v-model="formData.original_location_id"
+                required
                 class="form-control"
                 @change="onOriginalLocationChange"
               >
                 <option value="">Select Location</option>
-                <option 
-                  v-for="location in priority3Locations" 
-                  :key="location.id" 
+                <option
+                  v-for="location in priority3Locations"
+                  :key="location.id"
                   :value="location.id"
                 >
                   {{ location.label }}
@@ -53,16 +53,16 @@
           <div class="form-row">
             <div class="form-group">
               <label for="incoming-detector">Detector Returned *</label>
-              <select 
-                id="incoming-detector" 
-                v-model="formData.incoming_detector_id" 
-                required 
+              <select
+                id="incoming-detector"
+                v-model="formData.incoming_detector_id"
+                required
                 class="form-control"
               >
                 <option value="">Select Detector Returned</option>
-                <option 
-                  v-for="detector in filteredIncomingDetectors" 
-                  :key="detector.id" 
+                <option
+                  v-for="detector in filteredIncomingDetectors"
+                  :key="detector.id"
                   :value="detector.id"
                 >
                   {{ detector.label }} ({{ detector.serial }})
@@ -72,19 +72,41 @@
 
             <div class="form-group">
               <label for="outgoing-detector">Outgoing Detector (from Burnley) *</label>
-              <select 
-                id="outgoing-detector" 
-                v-model="formData.outgoing_detector_id" 
-                required 
+              <select
+                id="outgoing-detector"
+                v-model="formData.outgoing_detector_id"
+                required
                 class="form-control"
               >
                 <option value="">Select Outgoing Detector</option>
-                <option 
-                  v-for="detector in filteredOutgoingDetectors" 
-                  :key="detector.id" 
+                <option
+                  v-for="detector in filteredOutgoingDetectors"
+                  :key="detector.id"
                   :value="detector.id"
                 >
                   {{ detector.label }} ({{ detector.serial }})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Reason for Return -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reason-for-return">Reason for Return *</label>
+              <select
+                id="reason-for-return"
+                v-model="formData.fault_type"
+                required
+                class="form-control"
+              >
+                <option value="">Select Reason for Return</option>
+                <option
+                  v-for="faultType in faultTypes"
+                  :key="faultType.value"
+                  :value="faultType.value"
+                >
+                  {{ faultType.label }}
                 </option>
               </select>
             </div>
@@ -138,13 +160,15 @@ const formData = ref({
   detector_model_id: '',
   original_location_id: '',
   incoming_detector_id: '',
-  outgoing_detector_id: ''
+  outgoing_detector_id: '',
+  fault_type: ''
 });
 
 // State for related data
 const detectorModels = ref([]);
 const locations = ref([]);
 const detectors = ref([]);
+const faultTypes = ref([]);
 
 // State for submission
 const isSubmitting = ref(false);
@@ -217,6 +241,12 @@ const fetchData = async () => {
     if (detectorsResult.ok) {
       detectors.value = detectorsResult.data;
     }
+
+    // Fetch fault types
+    const faultTypesResult = await get('/api/inventory/detector-fault-types/');
+    if (faultTypesResult.ok) {
+      faultTypes.value = faultTypesResult.data;
+    }
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -235,23 +265,41 @@ const onOriginalLocationChange = () => {
   formData.value.incoming_detector_id = '';
 };
 
-// Change detector location function
+// Change detector location function - swaps detectors between origin and Burnley
 const changeDetectorLocation = async () => {
   isSubmitting.value = true;
 
   try {
-    // Call the API to change detector location
-    // Using the incoming detector as the one being moved to the original location
-    const result = await post('/api/inventory/change-detector-location/', {
-      detector_id: parseInt(formData.value.incoming_detector_id),
-      location_id: parseInt(formData.value.original_location_id)
+    // Find Burnley location
+    const burnleyLocation = locations.value.find(loc =>
+      loc.label.toLowerCase().includes('burnley')
+    );
+
+    if (!burnleyLocation) {
+      errorMessages.value = ['Burnley location not found'];
+      showErrorDialog.value = true;
+      isSubmitting.value = false;
+      return;
+    }
+
+    // Swap detectors:
+    // 1. Move incoming detector (from origin) to Burnley
+    // 2. Move outgoing detector (from Burnley) to origin
+    const incomingDetectorId = parseInt(formData.value.incoming_detector_id);
+    const outgoingDetectorId = parseInt(formData.value.outgoing_detector_id);
+    const originLocationId = parseInt(formData.value.original_location_id);
+    const burnleyLocationId = burnleyLocation.id;
+
+    // Move incoming detector to Burnley
+    const result1 = await post('/api/inventory/change-detector-location/', {
+      detector_id: incomingDetectorId,
+      location_id: burnleyLocationId
     });
 
-    if (!result.ok) {
-      if (result.status === 400) {
-        const errorData = result.data;
+    if (!result1.ok) {
+      if (result1.status === 400) {
+        const errorData = result1.data;
         errorMessages.value = [];
-
         for (const [field, errors] of Object.entries(errorData.errors || errorData)) {
           if (Array.isArray(errors)) {
             errorMessages.value.push(`${field}: ${errors.join(', ')}`);
@@ -259,19 +307,71 @@ const changeDetectorLocation = async () => {
             errorMessages.value.push(`${field}: ${errors}`);
           }
         }
-
         showErrorDialog.value = true;
       } else {
-        throw new Error(`HTTP error! status: ${result.status}`);
+        throw new Error(`HTTP error! status: ${result1.status}`);
+      }
+      return;
+    }
+
+    // Move outgoing detector to origin
+    const result2 = await post('/api/inventory/change-detector-location/', {
+      detector_id: outgoingDetectorId,
+      location_id: originLocationId
+    });
+
+    if (!result2.ok) {
+      if (result2.status === 400) {
+        const errorData = result2.data;
+        errorMessages.value = [];
+        for (const [field, errors] of Object.entries(errorData.errors || errorData)) {
+          if (Array.isArray(errors)) {
+            errorMessages.value.push(`${field}: ${errors.join(', ')}`);
+          } else {
+            errorMessages.value.push(`${field}: ${errors}`);
+          }
+        }
+        showErrorDialog.value = true;
+      } else {
+        throw new Error(`HTTP error! status: ${result2.status}`);
+      }
+      return;
+    }
+
+    // Create detector fault for the returned detector
+    const today = new Date().toISOString().split('T')[0];
+    const faultResult = await post('/api/inventory/detectorfaults/', {
+      detector: incomingDetectorId,
+      report_dt: today,
+      report_location: originLocationId,
+      status: 'OP',
+      fault_type: formData.value.fault_type,
+      submit_notes: ''
+    });
+
+    if (!faultResult.ok) {
+      if (faultResult.status === 400) {
+        const errorData = faultResult.data;
+        errorMessages.value = [];
+        for (const [field, errors] of Object.entries(errorData.errors || errorData)) {
+          if (Array.isArray(errors)) {
+            errorMessages.value.push(`${field}: ${errors.join(', ')}`);
+          } else {
+            errorMessages.value.push(`${field}: ${errors}`);
+          }
+        }
+        showErrorDialog.value = true;
+      } else {
+        throw new Error(`HTTP error! status: ${faultResult.status}`);
       }
       return;
     }
 
     // Show success message
-    successMessage.value = result.data.message || 'Detector location updated successfully';
+    successMessage.value = 'Detector swap completed successfully';
     showSuccessDialog.value = true;
   } catch (error) {
-    console.error('Error changing detector location:', error);
+    console.error('Error swapping detectors:', error);
     errorMessages.value = [error.message || 'An error occurred'];
     showErrorDialog.value = true;
   } finally {

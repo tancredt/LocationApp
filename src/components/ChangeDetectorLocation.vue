@@ -183,9 +183,7 @@ const errorMessages = ref([]);
 
 // Computed: Filter detector models to only MicroRAE models
 const microRaeDetectorModels = computed(() => {
-  return detectorModels.value.filter(model => 
-    model.label.toLowerCase().includes('microrae')
-  );
+  return detectorModels.value;
 });
 
 // Computed: Filter locations to priority 2 and 3
@@ -224,8 +222,8 @@ const filteredOutgoingDetectors = computed(() => {
 // Fetch all data
 const fetchData = async () => {
   try {
-    // Fetch detector models
-    const detectorModelsResult = await get('/api/inventory/detectormodels/');
+    // Fetch detector models (filtered to MicroRAE only)
+    const detectorModelsResult = await get('/api/inventory/detectormodels/?model_name=MicroRAE');
     if (detectorModelsResult.ok) {
       detectorModels.value = detectorModelsResult.data;
     }

@@ -4,6 +4,7 @@ import Login from '@/components/Login.vue'
 import ChangeLocationSelection from '@/components/ChangeLocationSelection.vue'
 import ChangeDetectorLocation from '@/components/ChangeDetectorLocation.vue'
 import ChangeCylinderLocation from '@/components/ChangeCylinderLocation.vue'
+import MicroRaeSwap from '@/components/MicroRaeSwap.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,6 +25,12 @@ const router = createRouter({
       path: '/change-detector-location',
       name: 'ChangeDetectorLocation',
       component: ChangeDetectorLocation,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/microrae-swap',
+      name: 'MicroRaeSwap',
+      component: MicroRaeSwap,
       meta: { requiresAuth: true }
     },
     {

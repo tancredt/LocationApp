@@ -52,14 +52,14 @@
           <!-- Incoming and Outgoing Detectors -->
           <div class="form-row">
             <div class="form-group">
-              <label for="incoming-detector">Incoming Detector *</label>
+              <label for="incoming-detector">Detector Returned *</label>
               <select 
                 id="incoming-detector" 
                 v-model="formData.incoming_detector_id" 
                 required 
                 class="form-control"
               >
-                <option value="">Select Incoming Detector</option>
+                <option value="">Select Detector Returned</option>
                 <option 
                   v-for="detector in filteredIncomingDetectors" 
                   :key="detector.id" 
@@ -71,7 +71,7 @@
             </div>
 
             <div class="form-group">
-              <label for="outgoing-detector">Outgoing Detector (Burnley) *</label>
+              <label for="outgoing-detector">Outgoing Detector (from Burnley) *</label>
               <select 
                 id="outgoing-detector" 
                 v-model="formData.outgoing_detector_id" 
@@ -157,9 +157,11 @@ const successMessage = ref('');
 const showErrorDialog = ref(false);
 const errorMessages = ref([]);
 
-// Computed: Filter detector models to only MicroRAE (detector_type = 'NM')
+// Computed: Filter detector models to only MicroRAE models
 const microRaeDetectorModels = computed(() => {
-  return detectorModels.value.filter(model => model.detector_type === 'NM');
+  return detectorModels.value.filter(model => 
+    model.label.toLowerCase().includes('microrae')
+  );
 });
 
 // Computed: Filter locations to priority 2 and 3

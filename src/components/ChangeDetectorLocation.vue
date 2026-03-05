@@ -162,9 +162,9 @@ const microRaeDetectorModels = computed(() => {
   return detectorModels.value.filter(model => model.detector_type === 'NM');
 });
 
-// Computed: Filter locations to only priority 3
+// Computed: Filter locations to priority 2 and 3
 const priority3Locations = computed(() => {
-  return locations.value.filter(location => location.priority === 3);
+  return locations.value.filter(location => location.priority === 2 || location.priority === 3);
 });
 
 // Computed: Filter incoming detectors based on selected model and location

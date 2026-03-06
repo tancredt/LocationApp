@@ -105,6 +105,20 @@
             </div>
           </div>
 
+          <!-- Notes -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="notes">Notes</label>
+              <textarea
+                id="notes"
+                v-model="formData.notes"
+                rows="4"
+                placeholder="Add any additional notes about the fault..."
+                class="form-control"
+              ></textarea>
+            </div>
+          </div>
+
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" :disabled="isSubmitting">Swap Detector</button>
             <router-link to="/change-location" class="btn btn-secondary">Cancel</router-link>
@@ -154,7 +168,8 @@ const formData = ref({
   original_location_id: '',
   incoming_detector_id: '',
   outgoing_detector_id: '',
-  fault_type: ''
+  fault_type: '',
+  notes: ''
 });
 
 // State for related data
@@ -316,7 +331,7 @@ const changeDetectorLocation = async () => {
       report_location: originLocationId,
       status: 'OP',
       fault_type: formData.value.fault_type,
-      submit_notes: ''
+      submit_notes: formData.value.notes || ''
     });
 
     if (!faultResult.ok) {
@@ -446,6 +461,11 @@ h1 {
 .form-control:disabled {
   background-color: #e9ecef;
   cursor: not-allowed;
+}
+
+textarea.form-control {
+  font-family: inherit;
+  resize: vertical;
 }
 
 .form-actions {

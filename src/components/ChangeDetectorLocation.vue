@@ -1,7 +1,9 @@
 <template>
   <div class="change-location-form-page">
+    <AppHeader />
+    
     <div class="page-container">
-      <h1>Detector Swap</h1>
+      <h2 class="page-title">Detector Swap</h2>
 
       <div class="form-container">
         <form @submit.prevent="changeDetectorLocation" class="change-location-form">
@@ -145,6 +147,8 @@
         </div>
       </div>
     </div>
+
+    <AppFooter />
   </div>
 </template>
 
@@ -152,6 +156,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { post, get } from '@/utils/api.js';
+import AppHeader from '@/components/AppHeader.vue';
+import AppFooter from '@/components/AppFooter.vue';
 
 const router = useRouter();
 
@@ -234,7 +240,8 @@ const fetchData = async () => {
       locations.value = locationsResult.data;
     }
 
-    // Fetch detectors
+    // Fetch detectors - fetch all since we need detectors from multiple locations
+    // The filtering by model and location is done in the computed properties
     const detectorsResult = await get('/api/inventory/detectors/');
     if (detectorsResult.ok) {
       detectors.value = detectorsResult.data;
@@ -404,6 +411,7 @@ onMounted(async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #f5f5f5;
 }
 
 .page-container {
@@ -411,11 +419,15 @@ onMounted(async () => {
   margin: 2rem auto;
   padding: 0 2rem;
   flex: 1;
+  width: 100%;
 }
 
-h1 {
+.page-title {
   color: #2c3e50;
   margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .form-container {

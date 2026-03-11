@@ -1,25 +1,23 @@
 <template>
   <div class="change-location-form-page">
+    <AppHeader />
+
     <div class="page-container">
-      <h1>MicroRAE Swap</h1>
+      <h2 class="page-title">MicroRAE Swap</h2>
 
-      <div class="form-container">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading detector data...</p>
+      </div>
+
+      <!-- Form -->
+      <div v-else class="form-container">
         <form @submit.prevent="changeDetectorLocation" class="change-location-form">
-          <!-- Detector Model (MicroRAE only, disabled) -->
-          <div class="form-row">
-            <div class="form-group">
-              <label for="detector-model">Detector Model *</label>
-              <select
-                id="detector-model"
-                v-model="formData.detector_model_id"
-                required
-                class="form-control"
-                disabled
-              >
-                <option value="1">MicroRAE</option>
-              </select>
-            </div>
+          <!-- Detector Model (MicroRAE only, hidden field) -->
+          <input type="hidden" v-model="formData.detector_model_id" />
 
+          <div class="form-row">
             <!-- Origin (District Office only) -->
             <div class="form-group">
               <label for="original-location">Origin *</label>
@@ -152,6 +150,8 @@
         </div>
       </div>
     </div>
+
+    <AppFooter />
   </div>
 </template>
 
@@ -159,12 +159,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { post, get } from '@/utils/api.js';
+import AppHeader from '@/components/AppHeader.vue';
+import AppFooter from '@/components/AppFooter.vue';
 
 const router = useRouter();
 
 // State for form data
 const formData = ref({
-  detector_model_id: '1', // MicroRAE
+  detector_model_id: '',
   original_location_id: '',
   incoming_detector_id: '',
   outgoing_detector_id: '',
@@ -181,6 +183,9 @@ const faultTypes = ref([]);
 // State for submission
 const isSubmitting = ref(false);
 
+// State for loading
+const isLoading = ref(true);
+
 // State for success dialog
 const showSuccessDialog = ref(false);
 const successMessage = ref('');
@@ -194,18 +199,17 @@ const districtOfficeLocations = computed(() => {
   return locations.value.filter(location => location.location_type === 'DI');
 });
 
-// Computed: Filter incoming detectors based on MicroRAE model (id=1) and selected location
+// Computed: Filter incoming detectors based on selected location
 const filteredIncomingDetectors = computed(() => {
   if (!formData.value.original_location_id) {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.detector_model === 1 && // MicroRAE
     detector.location === formData.value.original_location_id
   );
 });
 
-// Computed: Filter outgoing detectors (Burnley location, MicroRAE model)
+// Computed: Filter outgoing detectors (Burnley location)
 const filteredOutgoingDetectors = computed(() => {
   const burnleyLocation = locations.value.find(loc =>
     loc.label.toLowerCase().includes('burnley')
@@ -214,24 +218,36 @@ const filteredOutgoingDetectors = computed(() => {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.detector_model === 1 && // MicroRAE
     detector.location === burnleyLocation.id
   );
 });
 
 // Fetch all data
 const fetchData = async () => {
+  isLoading.value = true;
   try {
+    // Fetch detector models filtered to MicroRAE only
+    const detectorModelsResult = await get('/api/inventory/detectormodels/?label=MicroRAE');
+    if (detectorModelsResult.ok && detectorModelsResult.data.length > 0) {
+      detectorModels.value = detectorModelsResult.data;
+      // Set the detector_model_id from the fetched data
+      formData.value.detector_model_id = detectorModelsResult.data[0].id.toString();
+      
+      // Fetch detectors filtered by MicroRAE model
+      const detectorsResult = await get(`/api/inventory/detectors/?detector_model=${formData.value.detector_model_id}`);
+      if (detectorsResult.ok) {
+        detectors.value = detectorsResult.data;
+      }
+    } else {
+      // No MicroRAE model found - show error
+      errorMessages.value = ['MicroRAE detector model not found in the system. Please contact support.'];
+      showErrorDialog.value = true;
+    }
+
     // Fetch locations
     const locationsResult = await get('/api/inventory/locations/');
     if (locationsResult.ok) {
       locations.value = locationsResult.data;
-    }
-
-    // Fetch detectors
-    const detectorsResult = await get('/api/inventory/detectors/');
-    if (detectorsResult.ok) {
-      detectors.value = detectorsResult.data;
     }
 
     // Fetch fault types
@@ -241,6 +257,10 @@ const fetchData = async () => {
     }
   } catch (error) {
     console.error('Error fetching data:', error);
+    errorMessages.value = ['Error loading data. Please refresh the page and try again.'];
+    showErrorDialog.value = true;
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -391,6 +411,7 @@ onMounted(async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #f5f5f5;
 }
 
 .page-container {
@@ -398,11 +419,48 @@ onMounted(async () => {
   margin: 2rem auto;
   padding: 0 2rem;
   flex: 1;
+  width: 100%;
 }
 
-h1 {
+.page-title {
   color: #2c3e50;
   margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.loading-container {
+  background: white;
+  border-radius: 8px;
+  padding: 3rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #42b883;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
 }
 
 .form-container {

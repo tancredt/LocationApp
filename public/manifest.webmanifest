@@ -1,0 +1,19 @@
+{
+  "name": "FRV Hazmat Equipment Location Management",
+  "short_name": "Hazmat Tracker",
+  "description": "Internal Fire Rescue Victoria application for managing hazardous materials detection equipment locations across stations and facilities",
+  "start_url": "/changelocation/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#42b883",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en-AU"
+}

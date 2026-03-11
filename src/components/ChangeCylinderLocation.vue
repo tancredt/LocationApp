@@ -1,7 +1,9 @@
 <template>
   <div class="change-location-form-page">
+    <AppHeader />
+    
     <div class="page-container">
-      <h1>Change Cylinder Location</h1>
+      <h2 class="page-title">Change Cylinder Location</h2>
 
       <div class="form-container">
         <form @submit.prevent="changeCylinderLocation" class="change-location-form">
@@ -74,6 +76,8 @@
         </div>
       </div>
     </div>
+
+    <AppFooter />
   </div>
 </template>
 
@@ -81,6 +85,8 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { post, get } from '@/utils/api.js';
+import AppHeader from '@/components/AppHeader.vue';
+import AppFooter from '@/components/AppFooter.vue';
 
 const router = useRouter();
 
@@ -240,11 +246,26 @@ h1 {
   margin-bottom: 2rem;
 }
 
+.page-title {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .form-container {
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.change-location-form-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
 }
 
 .change-location-form {

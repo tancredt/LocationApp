@@ -1,8 +1,21 @@
 {
-  "name": "locationapp",
-  "version": "0.0.0",
+  "name": "frv-hazmat-location-app",
+  "version": "1.0.0",
+  "description": "Fire Rescue Victoria Hazmat Equipment Location Management Application - Internal system for tracking and managing hazardous materials detection equipment including gas detectors, calibration cylinders, and sensors",
   "private": true,
   "type": "module",
+  "author": "Fire Rescue Victoria - Hazmat Department",
+  "license": "UNLICENSED",
+  "keywords": [
+    "hazmat",
+    "equipment-management",
+    "gas-detection",
+    "fire-rescue",
+    "victoria",
+    "emergency-services",
+    "inventory",
+    "location-tracking"
+  ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

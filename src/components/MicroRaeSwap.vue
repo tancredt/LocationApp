@@ -49,6 +49,7 @@
                 v-model="formData.incoming_detector_id"
                 required
                 class="form-control"
+                :disabled="!formData.original_location_id"
               >
                 <option value="">Select Detector Returned</option>
                 <option
@@ -68,6 +69,7 @@
                 v-model="formData.outgoing_detector_id"
                 required
                 class="form-control"
+                :disabled="!formData.original_location_id"
               >
                 <option value="">Select Outgoing Detector</option>
                 <option
@@ -199,18 +201,22 @@ const districtOfficeLocations = computed(() => {
   return locations.value.filter(location => location.location_type === 'DI');
 });
 
-// Computed: Filter incoming detectors based on selected location
+// Computed: Filter incoming detectors based on selected location and MicroRAE model
 const filteredIncomingDetectors = computed(() => {
-  if (!formData.value.original_location_id) {
+  if (!formData.value.original_location_id || !formData.value.detector_model_id) {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.location_id === formData.value.original_location_id
+    detector.location_id === formData.value.original_location_id &&
+    detector.detector_model === parseInt(formData.value.detector_model_id)
   );
 });
 
-// Computed: Filter outgoing detectors (Burnley location)
+// Computed: Filter outgoing detectors (Burnley location, MicroRAE model)
 const filteredOutgoingDetectors = computed(() => {
+  if (!formData.value.detector_model_id) {
+    return [];
+  }
   const burnleyLocation = locations.value.find(loc =>
     loc.label.toLowerCase().includes('burnley')
   );
@@ -218,7 +224,8 @@ const filteredOutgoingDetectors = computed(() => {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.location_id === burnleyLocation.id
+    detector.location_id === burnleyLocation.id &&
+    detector.detector_model === parseInt(formData.value.detector_model_id)
   );
 });
 

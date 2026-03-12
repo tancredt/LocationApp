@@ -17,7 +17,7 @@
           <div class="form-row">
             <!-- Origin (District Office only) -->
             <div class="form-group">
-              <label for="original-location">Origin *</label>
+              <label for="original-location">District *</label>
               <select
                 id="original-location"
                 v-model="formData.original_location_id"
@@ -27,7 +27,7 @@
               >
                 <option value="">Select Location</option>
                 <option
-                  v-for="location in districtOfficeLocations"
+                  v-for="location in districtLocations"
                   :key="location.id"
                   :value="location.id"
                 >
@@ -40,7 +40,7 @@
           <!-- Incoming and Outgoing Detectors -->
           <div class="form-row">
             <div class="form-group">
-              <label for="incoming-detector">Detector Returned *</label>
+              <label for="incoming-detector">Detector Returned (faulty)*</label>
               <select
                 id="incoming-detector"
                 v-model="formData.incoming_detector_id"
@@ -60,7 +60,7 @@
             </div>
 
             <div class="form-group">
-              <label for="outgoing-detector">Outgoing Detector (from Burnley) *</label>
+              <label for="outgoing-detector">Replacement Detector (from Burnley) *</label>
               <select
                 id="outgoing-detector"
                 v-model="formData.outgoing_detector_id"
@@ -193,8 +193,8 @@ const showErrorDialog = ref(false);
 const errorMessages = ref([]);
 
 // Computed: Filter locations to District Office only (location_type = 'DI')
-const districtOfficeLocations = computed(() => {
-  return locations.value.filter(location => location.location_type === 'DI');
+const districtLocations = computed(() => {
+  return locations.value;
 });
 
 // Computed: Filter incoming detectors based on selected location
@@ -233,7 +233,7 @@ const fetchData = async () => {
     }
 
     // Fetch locations
-    const locationsResult = await get('/api/inventory/locations/');
+    const locationsResult = await get('/api/inventory/locations/?location_type=DI');
     if (locationsResult.ok) {
       locations.value = locationsResult.data;
     }

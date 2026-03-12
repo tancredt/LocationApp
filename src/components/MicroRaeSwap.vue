@@ -14,9 +14,6 @@
       <!-- Form -->
       <div v-else class="form-container">
         <form @submit.prevent="changeDetectorLocation" class="change-location-form">
-          <!-- Detector Model (MicroRAE only, hidden field) -->
-          <input type="hidden" v-model="formData.detector_model_id" />
-
           <div class="form-row">
             <!-- Origin (District Office only) -->
             <div class="form-group">
@@ -168,7 +165,6 @@ const router = useRouter();
 
 // State for form data
 const formData = ref({
-  detector_model_id: '',
   original_location_id: '',
   incoming_detector_id: '',
   outgoing_detector_id: '',
@@ -177,7 +173,6 @@ const formData = ref({
 });
 
 // State for related data
-const detectorModels = ref([]);
 const locations = ref([]);
 const detectors = ref([]);
 const faultTypes = ref([]);
@@ -201,22 +196,18 @@ const districtOfficeLocations = computed(() => {
   return locations.value.filter(location => location.location_type === 'DI');
 });
 
-// Computed: Filter incoming detectors based on selected location and MicroRAE model
+// Computed: Filter incoming detectors based on selected location
 const filteredIncomingDetectors = computed(() => {
-  if (!formData.value.original_location_id || !formData.value.detector_model_id) {
+  if (!formData.value.original_location_id) {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.location_id === formData.value.original_location_id &&
-    detector.detector_model === parseInt(formData.value.detector_model_id)
+    detector.location_id === formData.value.original_location_id
   );
 });
 
-// Computed: Filter outgoing detectors (Burnley location, MicroRAE model)
+// Computed: Filter outgoing detectors (Burnley location)
 const filteredOutgoingDetectors = computed(() => {
-  if (!formData.value.detector_model_id) {
-    return [];
-  }
   const burnleyLocation = locations.value.find(loc =>
     loc.label.toLowerCase().includes('burnley')
   );
@@ -224,8 +215,7 @@ const filteredOutgoingDetectors = computed(() => {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.location_id === burnleyLocation.id &&
-    detector.detector_model === parseInt(formData.value.detector_model_id)
+    detector.location_id === burnleyLocation.id
   );
 });
 
@@ -236,12 +226,10 @@ const fetchData = async () => {
     // Fetch detector models filtered to MicroRAE only
     const detectorModelsResult = await get('/api/inventory/detectormodels/?label=MicroRAE');
     if (detectorModelsResult.ok && detectorModelsResult.data.length > 0) {
-      detectorModels.value = detectorModelsResult.data;
-      // Set the detector_model_id from the fetched data
-      formData.value.detector_model_id = detectorModelsResult.data[0].id.toString();
-      
+      const microRaeModelId = detectorModelsResult.data[0].id;
+
       // Fetch detectors filtered by MicroRAE model
-      const detectorsResult = await get(`/api/inventory/detectors/?detector_model=${formData.value.detector_model_id}`);
+      const detectorsResult = await get(`/api/inventory/detectors/?detector_model=${microRaeModelId}`);
       if (detectorsResult.ok) {
         detectors.value = detectorsResult.data;
       }

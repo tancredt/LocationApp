@@ -202,7 +202,7 @@ const filteredIncomingDetectors = computed(() => {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.location_id === formData.value.original_location_id
+    detector.location === formData.value.original_location_id
   );
 });
 
@@ -215,7 +215,7 @@ const filteredOutgoingDetectors = computed(() => {
     return [];
   }
   return detectors.value.filter(detector =>
-    detector.location_id === burnleyLocation.id
+    detector.location === burnleyLocation.id
   );
 });
 

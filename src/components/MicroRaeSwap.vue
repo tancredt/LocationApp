@@ -228,8 +228,8 @@ const filteredOutgoingDetectors = computed(() => {
 const fetchData = async () => {
   isLoading.value = true;
   try {
-    // Fetch detector models filtered to MicroRAE only (using model_name filter)
-    const detectorModelsResult = await get('/api/inventory/detectormodels/?model_name=MicroRAE');
+    // Fetch detector models filtered to MicroRAE only (using label filter)
+    const detectorModelsResult = await get('/api/inventory/detectormodels/?label=MicroRAE');
     console.log('Detector models response:', detectorModelsResult);
     if (detectorModelsResult.ok && detectorModelsResult.data && detectorModelsResult.data.length > 0) {
       const microRaeModelId = detectorModelsResult.data[0].id;

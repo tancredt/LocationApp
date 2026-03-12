@@ -228,27 +228,15 @@ const filteredOutgoingDetectors = computed(() => {
 const fetchData = async () => {
   isLoading.value = true;
   try {
-    // Fetch detector models filtered to MicroRAE only (using label filter)
-    const detectorModelsResult = await get('/api/inventory/detectormodels/?label=MicroRAE');
-    console.log('Detector models response:', detectorModelsResult);
-    if (detectorModelsResult.ok && detectorModelsResult.data && detectorModelsResult.data.length > 0) {
-      const microRaeModelId = detectorModelsResult.data[0].id;
-      console.log('MicroRAE Model ID:', microRaeModelId);
-
-      // Fetch detectors filtered by MicroRAE model
-      const detectorsResult = await get(`/api/inventory/detectors/?detector_model=${microRaeModelId}`);
-      console.log('Detectors response:', detectorsResult);
-      if (detectorsResult.ok && detectorsResult.data) {
-        detectors.value = detectorsResult.data;
-        console.log('Loaded detectors count:', detectors.value.length);
-        if (detectors.value.length > 0) {
-          console.log('Sample detector:', detectors.value[0]);
-        }
+    // Fetch detectors filtered by MicroRAE model using detector_model__label filter
+    const detectorsResult = await get('/api/inventory/detectors/?detector_model__label=MicroRAE');
+    console.log('Detectors response:', detectorsResult);
+    if (detectorsResult.ok && detectorsResult.data) {
+      detectors.value = detectorsResult.data;
+      console.log('Loaded detectors count:', detectors.value.length);
+      if (detectors.value.length > 0) {
+        console.log('Sample detector:', detectors.value[0]);
       }
-    } else {
-      // No MicroRAE model found - show error
-      errorMessages.value = ['MicroRAE detector model not found in the system. Please contact support.'];
-      showErrorDialog.value = true;
     }
 
     // Fetch locations

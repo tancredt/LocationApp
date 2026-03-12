@@ -201,9 +201,11 @@ const filteredIncomingDetectors = computed(() => {
   if (!formData.value.original_location_id) {
     return [];
   }
-  return detectors.value.filter(detector =>
+  const filtered = detectors.value.filter(detector =>
     detector.location === formData.value.original_location_id
   );
+  console.log('Filtered incoming detectors:', filtered, 'for location:', formData.value.original_location_id, 'total detectors:', detectors.value.length);
+  return filtered;
 });
 
 // Computed: Filter outgoing detectors (Burnley location)
@@ -212,26 +214,36 @@ const filteredOutgoingDetectors = computed(() => {
     loc.label.toLowerCase().includes('burnley')
   );
   if (!burnleyLocation) {
+    console.log('Burnley location not found');
     return [];
   }
-  return detectors.value.filter(detector =>
+  const filtered = detectors.value.filter(detector =>
     detector.location === burnleyLocation.id
   );
+  console.log('Filtered outgoing detectors:', filtered, 'for Burnley location ID:', burnleyLocation.id, 'total detectors:', detectors.value.length);
+  return filtered;
 });
 
 // Fetch all data
 const fetchData = async () => {
   isLoading.value = true;
   try {
-    // Fetch detector models filtered to MicroRAE only
-    const detectorModelsResult = await get('/api/inventory/detectormodels/?label=MicroRAE');
-    if (detectorModelsResult.ok && detectorModelsResult.data.length > 0) {
+    // Fetch detector models filtered to MicroRAE only (using model_name filter)
+    const detectorModelsResult = await get('/api/inventory/detectormodels/?model_name=MicroRAE');
+    console.log('Detector models response:', detectorModelsResult);
+    if (detectorModelsResult.ok && detectorModelsResult.data && detectorModelsResult.data.length > 0) {
       const microRaeModelId = detectorModelsResult.data[0].id;
+      console.log('MicroRAE Model ID:', microRaeModelId);
 
       // Fetch detectors filtered by MicroRAE model
       const detectorsResult = await get(`/api/inventory/detectors/?detector_model=${microRaeModelId}`);
-      if (detectorsResult.ok) {
+      console.log('Detectors response:', detectorsResult);
+      if (detectorsResult.ok && detectorsResult.data) {
         detectors.value = detectorsResult.data;
+        console.log('Loaded detectors count:', detectors.value.length);
+        if (detectors.value.length > 0) {
+          console.log('Sample detector:', detectors.value[0]);
+        }
       }
     } else {
       // No MicroRAE model found - show error

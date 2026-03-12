@@ -175,6 +175,7 @@ const formData = ref({
 // State for related data
 const locations = ref([]);
 const detectors = ref([]);
+const outgoingDetectors = ref([]);
 const faultTypes = ref([]);
 
 // State for submission
@@ -201,27 +202,14 @@ const filteredIncomingDetectors = computed(() => {
   if (!formData.value.original_location_id) {
     return [];
   }
-  const filtered = detectors.value.filter(detector =>
+  return detectors.value.filter(detector =>
     detector.location === formData.value.original_location_id
   );
-  console.log('Filtered incoming detectors:', filtered, 'for location:', formData.value.original_location_id, 'total detectors:', detectors.value.length);
-  return filtered;
 });
 
-// Computed: Filter outgoing detectors (Burnley location)
+// Computed: Filter outgoing detectors (Burnley location, already filtered by API)
 const filteredOutgoingDetectors = computed(() => {
-  const burnleyLocation = locations.value.find(loc =>
-    loc.label.toLowerCase().includes('burnley')
-  );
-  if (!burnleyLocation) {
-    console.log('Burnley location not found');
-    return [];
-  }
-  const filtered = detectors.value.filter(detector =>
-    detector.location === burnleyLocation.id
-  );
-  console.log('Filtered outgoing detectors:', filtered, 'for Burnley location ID:', burnleyLocation.id, 'total detectors:', detectors.value.length);
-  return filtered;
+  return outgoingDetectors.value;
 });
 
 // Fetch all data
@@ -234,9 +222,14 @@ const fetchData = async () => {
     if (detectorsResult.ok && detectorsResult.data) {
       detectors.value = detectorsResult.data;
       console.log('Loaded detectors count:', detectors.value.length);
-      if (detectors.value.length > 0) {
-        console.log('Sample detector:', detectors.value[0]);
-      }
+    }
+
+    // Fetch outgoing detectors (MicroRAE detectors at Burnley)
+    const outgoingDetectorsResult = await get('/api/inventory/detectors/?detector_model__label=MicroRAE&location__label=Burnley');
+    console.log('Outgoing detectors response:', outgoingDetectorsResult);
+    if (outgoingDetectorsResult.ok && outgoingDetectorsResult.data) {
+      outgoingDetectors.value = outgoingDetectorsResult.data;
+      console.log('Loaded outgoing detectors count:', outgoingDetectors.value.length);
     }
 
     // Fetch locations

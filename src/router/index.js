@@ -16,6 +16,18 @@ const router = createRouter({
       meta: { requiresAuth: false, title: 'Login - FRV Hazmat Location Management' }
     },
     {
+      path: '/about',
+      name: 'About',
+      component: () => import('@/components/About.vue'),
+      meta: { requiresAuth: true, title: 'About - FRV Hazmat Location Management' }
+    },
+    {
+      path: '/help',
+      name: 'Help',
+      component: () => import('@/components/Help.vue'),
+      meta: { requiresAuth: true, title: 'Help & FAQ - FRV Hazmat Location Management' }
+    },
+    {
       path: '/change-location',
       name: 'ChangeLocationSelection',
       component: ChangeLocationSelection,

@@ -13,37 +13,41 @@ const router = createRouter({
       path: '/',
       name: 'Login',
       component: Login,
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, title: 'Login - FRV Hazmat Location Management' }
     },
     {
       path: '/change-location',
       name: 'ChangeLocationSelection',
       component: ChangeLocationSelection,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Select Equipment - FRV Hazmat Location Management' }
     },
     {
       path: '/change-detector-location',
       name: 'ChangeDetectorLocation',
       component: ChangeDetectorLocation,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Change Detector Location - FRV Hazmat Location Management' }
     },
     {
       path: '/microrae-swap',
       name: 'MicroRaeSwap',
       component: MicroRaeSwap,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'MicroRAE Swap - FRV Hazmat Location Management' }
     },
     {
       path: '/change-cylinder-location',
       name: 'ChangeCylinderLocation',
       component: ChangeCylinderLocation,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'Change Cylinder Location - FRV Hazmat Location Management' }
     }
   ],
 })
 
 // Global route guard
 router.beforeEach(async (to, from, next) => {
+  // Update document title based on route meta
+  const title = to.meta?.title || 'FRV Hazmat Location Management';
+  document.title = title;
+
   if (to.meta.requiresAuth) {
     const authStore = useAuthStore()
     await authStore.checkAuth()

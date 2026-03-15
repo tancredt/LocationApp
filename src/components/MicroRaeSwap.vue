@@ -194,7 +194,7 @@ const errorMessages = ref([]);
 
 // Computed: Filter locations to District Office only (location_type = 'DI')
 const districtLocations = computed(() => {
-  return locations.value;
+  return locations.value.filter(loc => loc.location_type === 'DI');
 });
 
 // Computed: Filter incoming detectors based on selected location
